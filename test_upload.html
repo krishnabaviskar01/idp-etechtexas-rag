@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .upload-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+            cursor: pointer;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        #status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .file-list {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .file-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h1>📤 Multiple File Upload</h1>
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="files">Select Files (You can select multiple files by holding Ctrl/Cmd or Shift)</label>
+                <input type="file" id="files" name="files" multiple required>
+                <div id="fileList" class="file-list" style="display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="dataset_name">Dataset Name (Optional)</label>
+                <input type="text" id="dataset_name" name="dataset_name" placeholder="e.g., my_dataset">
+            </div>
+            
+            <div class="form-group">
+                <label for="folder_id">Parent Folder ID (Optional)</label>
+                <input type="text" id="folder_id" name="folder_id" placeholder="Google Drive folder ID">
+            </div>
+            
+            <button type="submit" id="submitBtn">Upload Files</button>
+        </form>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('files');
+        const fileList = document.getElementById('fileList');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusDiv = document.getElementById('status');
+
+        // Show selected files
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                fileList.style.display = 'block';
+                fileList.innerHTML = '<strong>Selected Files (' + files.length + '):</strong><br>';
+                for (let i = 0; i < files.length; i++) {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.textContent = `${i + 1}. ${files[i].name} (${formatFileSize(files[i].size)})`;
+                    fileList.appendChild(fileItem);
+                }
+            } else {
+                fileList.style.display = 'none';
+            }
+        });
+
+        // Handle form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const files = fileInput.files;
+            const datasetName = document.getElementById('dataset_name').value;
+            const folderId = document.getElementById('folder_id').value;
+            
+            if (files.length === 0) {
+                showStatus('Please select at least one file.', 'error');
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+            showStatus('Uploading files...', 'info');
+
+            const formData = new FormData();
+            
+            // Add all files to FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+            
+            // Add optional parameters
+            if (datasetName) {
+                formData.append('dataset_name', datasetName);
+            }
+            if (folderId) {
+                formData.append('folder_id', folderId);
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let message = `✅ Success! Uploaded ${result.successful_uploads} of ${result.total_files} file(s).\n\n`;
+                    
+                    if (result.dataset_folder) {
+                        message += `📁 Dataset Folder: ${result.dataset_folder.name} (ID: ${result.dataset_folder.id})\n\n`;
+                    }
+                    
+                    message += 'Uploaded Files:\n';
+                    result.uploaded_files.forEach((file, index) => {
+                        message += `${index + 1}. ${file.filename}\n`;
+                        message += `   File ID: ${file.data.file_id}\n`;
+                        message += `   Link: ${file.data.web_view_link}\n\n`;
+                    });
+                    
+                    if (result.failed_files && result.failed_files.length > 0) {
+                        message += '\nFailed Files:\n';
+                        result.failed_files.forEach((file, index) => {
+                            message += `${index + 1}. ${file.filename}: ${file.error}\n`;
+                        });
+                    }
+                    
+                    showStatus(message, 'success');
+                    
+                    // Show full response in console/pre tag
+                    const pre = document.createElement('pre');
+                    pre.textContent = JSON.stringify(result, null, 2);
+                    statusDiv.appendChild(pre);
+                } else {
+                    showStatus('Error: ' + (result.detail?.message || result.detail || 'Upload failed'), 'error');
+                    if (result.detail) {
+                        const pre = document.createElement('pre');
+                        pre.textContent = JSON.stringify(result.detail, null, 2);
+                        statusDiv.appendChild(pre);
+                    }
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+                console.error('Upload error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Files';
+            }
+        });
+
+        function showStatus(message, type) {
+            statusDiv.textContent = '';
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = message;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
+
