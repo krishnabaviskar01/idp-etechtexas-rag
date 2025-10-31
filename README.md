@@ -8,12 +8,15 @@ A FastAPI application for uploading files to Google Drive with structured loggin
 
 ### Features
 
-- ✅ FastAPI REST API
-- ✅ Google Drive file upload
-- ✅ Loguru logging with file rotation
+- ✅ FastAPI REST API with router-based architecture
+- ✅ Multiple file upload support
+- ✅ Google Drive integration with automatic folder creation
+- ✅ Dataset-based organization (create folders by dataset name)
+- ✅ Pydantic schemas for request/response validation
+- ✅ Loguru logging with environment-based configuration
 - ✅ Configuration management with environment variables
-- ✅ Error handling and validation
-- ✅ File upload endpoint
+- ✅ Comprehensive error handling and validation
+- ✅ Type-safe API documentation (OpenAPI/Swagger)
 
 ### Setup
 
@@ -36,6 +39,7 @@ A FastAPI application for uploading files to Google Drive with structured loggin
    - Copy `.env.example` to `.env`
    - Add your Google Drive credentials:
      ```env
+     ENV=local  # Set to 'local' for file logging, otherwise stdout logging
      GOOGLE_DRIVE_CLIENT_ID=your_client_id_here
      GOOGLE_DRIVE_CLIENT_SECRET=your_client_secret_here
      GOOGLE_DRIVE_PROJECT_ID=your_project_id  # Optional
@@ -62,20 +66,41 @@ Root endpoint - Returns application information
 Health check endpoint - Returns service status
 
 #### `POST /upload`
-Upload a file via multipart form data
+Upload one or multiple files to Google Drive
 
 **Request:**
-- `file`: File to upload (multipart/form-data)
-- `folder_id`: (Optional) Google Drive folder ID
-- `custom_name`: (Optional) Custom file name
+- `files`: List of files to upload (multipart/form-data) - **supports multiple files**
+- `folder_id`: (Optional) Google Drive folder ID (parent folder)
+- `dataset_name`: (Optional) Dataset name - creates a folder with this name and uploads all files inside
 
-**Example using curl:**
+**Features:**
+- Upload multiple files in a single request
+- Automatic folder creation if `dataset_name` is provided
+- Detailed response with success/failure status for each file
+
+**Example using curl (single file):**
 ```bash
 curl -X POST "http://localhost:8000/upload" \
-  -F "file=@/path/to/your/file.pdf" \
-  -F "folder_id=your_folder_id" \
-  -F "custom_name=my_file.pdf"
+  -F "files=@/path/to/your/file.pdf" \
+  -F "dataset_name=my_dataset"
 ```
+
+**Example using curl (multiple files):**
+```bash
+curl -X POST "http://localhost:8000/upload" \
+  -F "files=@/path/to/file1.pdf" \
+  -F "files=@/path/to/file2.pdf" \
+  -F "files=@/path/to/file3.pdf" \
+  -F "dataset_name=my_dataset" \
+  -F "folder_id=parent_folder_id"
+```
+
+**Response:**
+Returns a structured response with:
+- Upload status for each file
+- Google Drive file metadata (file_id, links, etc.)
+- Dataset folder information (if `dataset_name` provided)
+- Error details for any failed uploads
 
 ### Project Structure
 
@@ -83,13 +108,22 @@ curl -X POST "http://localhost:8000/upload" \
 idp-etechtexas-rag/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration management
+│   ├── main.py              # FastAPI application entry point
+│   ├── config.py            # Configuration management (Pydantic Settings)
 │   ├── logger.py            # Loguru logging setup
-│   └── services/
+│   ├── routers/             # API route handlers
+│   │   ├── __init__.py
+│   │   ├── health.py        # Health check endpoints
+│   │   └── upload.py        # File upload endpoints
+│   ├── schemas/             # Pydantic models for request/response
+│   │   ├── __init__.py
+│   │   ├── health.py        # Health check schemas
+│   │   └── upload.py        # Upload-related schemas
+│   └── services/            # Business logic services
 │       ├── __init__.py
-│       └── gdrive_service.py  # Google Drive service
-├── logs/                     # Log files (auto-created)
+│       ├── gdrive_service.py     # Google Drive API integration
+│       └── service_manager.py    # Service instance management
+├── logs/                     # Log files (auto-created, organized by date/hour)
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
@@ -98,15 +132,37 @@ idp-etechtexas-rag/
 
 ### Logging
 
-Logs are written to both console (colored) and file (`logs/app.log`) with:
-- Automatic rotation at 10MB
-- 7-day retention
-- ZIP compression
+Logging behavior depends on the `ENV` environment variable:
+
+**When `ENV=local`:**
+- Logs are written to files in `logs/YYYY-MM-DD/HH-MM.log` structure
+- Automatic rotation at 2MB
+- 10-day retention
+- Thread-safe logging with `enqueue=True`
+
+**When `ENV` is not set or set to other values:**
+- Logs are written to stdout (console)
+- Colored output for better readability
 - Thread-safe logging
+
+**Log Format:**
+```
+{time:YYYY-MM-DD HH:mm:ss.SSS} |{level: <7}| {name}:{function}:{line} | {message}
+```
 
 ### Configuration
 
 All configuration is managed through environment variables (see `.env.example`). The application uses `pydantic-settings` for type-safe configuration management.
+
+### Architecture
+
+The application follows FastAPI best practices:
+
+- **Router-based structure**: Endpoints organized by feature in separate router files
+- **Pydantic schemas**: Request/response models defined in `schemas/` folder for validation and documentation
+- **Service layer**: Business logic separated into service classes
+- **Dependency injection**: Services managed centrally and injected into routes
+- **Type safety**: Full type hints and Pydantic validation throughout
 
 ### Notes
 
