@@ -27,7 +27,16 @@ class Settings(BaseSettings):
     
     # Google Drive API Configuration
     GOOGLE_DRIVE_TOKEN_FILE: Optional[str] = os.getenv("GOOGLE_DRIVE_TOKEN_FILE", "token.json")
-    GOOGLE_DRIVE_FOLDER_ID: Optional[str] = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
+    GOOGLE_DRIVE_FOLDER_ID: Optional[str] = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "1ZT_FuaOCd6DmoAcOXbMhH2XmXCrLHovy")
+    
+    # MongoDB Configuration
+    MONGODB_URI: Optional[str] = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "central_acts")
+    # MongoDB Atlas credentials (for secure connection)
+    MONGO_USERNAME: Optional[str] = os.getenv("MONGO_USERNAME")
+    MONGO_PASSWORD: Optional[str] = os.getenv("MONGO_PASSWORD")
+    MONGO_CLUSTER_URL: Optional[str] = os.getenv("MONGO_CLUSTER_URL")
+    MONGO_APP_NAME: Optional[str] = os.getenv("MONGO_APP_NAME")
     
     # API
     API_HOST: str = "0.0.0.0"
