@@ -311,4 +311,183 @@ class GoogleDriveService:
         except Exception as e:
             logger.error(f"Unexpected error while creating/finding folder: {e}")
             raise
+    
+    def download_file(self, file_id: str) -> bytes:
+        """
+        Download a file from Google Drive
+        
+        Args:
+            file_id: Google Drive file ID
+            
+        Returns:
+            File content as bytes
+            
+        Raises:
+            HttpError: If Google Drive API error occurs
+        """
+        try:
+            logger.debug(f"Downloading file: {file_id}")
+            request = self.service.files().get_media(fileId=file_id)
+            file_content = request.execute()
+            logger.debug(f"Downloaded file: {file_id} ({len(file_content)} bytes)")
+            return file_content
+        except HttpError as e:
+            logger.error(f"Google Drive API error while downloading file: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while downloading file: {e}")
+            raise
+    
+    def list_files_in_folder(
+        self,
+        folder_id: str,
+        file_types: Optional[list] = None,
+        recursive: bool = True
+    ) -> list:
+        """
+        List files in a folder (optionally recursive)
+        
+        Args:
+            folder_id: Google Drive folder ID
+            file_types: Optional list of MIME types to filter (e.g., ['application/pdf'])
+            recursive: Whether to recursively search subfolders
+            
+        Returns:
+            List of file metadata dictionaries with 'id', 'name', 'mimeType', 'path'
+        """
+        files = []
+        file_types = file_types or []
+        
+        # Supported file extensions for OCR
+        supported_extensions = {'.pdf', '.doc', '.docx', '.txt'}
+        
+        def _list_folder(folder_id: str, parent_path: str = ""):
+            """Recursive helper to list files in folder"""
+            try:
+                # List files in current folder
+                query = f"'{folder_id}' in parents and trashed=false"
+                if file_types:
+                    mime_query = " or ".join([f"mimeType='{mt}'" for mt in file_types])
+                    query += f" and ({mime_query})"
+                
+                results = self.service.files().list(
+                    q=query,
+                    spaces='drive',
+                    fields='files(id, name, mimeType)',
+                    pageSize=1000
+                ).execute()
+                
+                items = results.get('files', [])
+                
+                for item in items:
+                    item_id = item['id']
+                    item_name = item['name']
+                    item_mime = item.get('mimeType', '')
+                    item_path = f"{parent_path}/{item_name}" if parent_path else item_name
+                    
+                    # Check if it's a folder
+                    if item_mime == 'application/vnd.google-apps.folder':
+                        if recursive:
+                            _list_folder(item_id, item_path)
+                    else:
+                        # Check if file extension is supported
+                        import os
+                        ext = os.path.splitext(item_name)[1].lower()
+                        if ext in supported_extensions:
+                            files.append({
+                                'id': item_id,
+                                'name': item_name,
+                                'mimeType': item_mime,
+                                'path': item_path
+                            })
+                        elif item_mime == 'application/vnd.google-apps.document':
+                            # Skip Google Docs native files (per PRD)
+                            logger.debug(f"Skipping Google Docs native file: {item_path}")
+            
+            except HttpError as e:
+                logger.error(f"Error listing folder {folder_id}: {e}")
+                raise
+        
+        logger.info(f"Listing files in folder: {folder_id} (recursive={recursive})")
+        _list_folder(folder_id)
+        logger.info(f"Found {len(files)} files")
+        return files
+    
+    def get_file_info(self, file_id: str) -> Dict[str, Any]:
+        """
+        Get file metadata
+        
+        Args:
+            file_id: Google Drive file ID
+            
+        Returns:
+            Dictionary with file metadata
+        """
+        try:
+            file = self.service.files().get(
+                fileId=file_id,
+                fields='id,name,mimeType,size,createdTime,modifiedTime'
+            ).execute()
+            return file
+        except HttpError as e:
+            logger.error(f"Error getting file info for {file_id}: {e}")
+            raise
+    
+    def ensure_folder_hierarchy(
+        self,
+        folder_path: str,
+        parent_folder_id: str
+    ) -> str:
+        """
+        Ensure a folder hierarchy exists, creating missing folders
+        
+        Args:
+            folder_path: Folder path (e.g., "Optical Character Recognition/dataset_name/subfolder")
+            parent_folder_id: Parent folder ID to start from
+            
+        Returns:
+            Final folder ID
+        """
+        parts = [p.strip() for p in folder_path.split('/') if p.strip()]
+        current_parent = parent_folder_id
+        
+        for part in parts:
+            current_parent = self.create_or_get_folder(
+                folder_name=part,
+                parent_folder_id=current_parent
+            )
+        
+        return current_parent
+    
+    def file_exists_in_folder(
+        self,
+        file_name: str,
+        folder_id: str
+    ) -> Optional[str]:
+        """
+        Check if a file exists in a folder
+        
+        Args:
+            file_name: Name of the file to check
+            folder_id: Folder ID to search in
+            
+        Returns:
+            File ID if exists, None otherwise
+        """
+        try:
+            query = f"name='{file_name.replace('\"', '\\\"')}' and '{folder_id}' in parents and trashed=false"
+            results = self.service.files().list(
+                q=query,
+                spaces='drive',
+                fields='files(id, name)',
+                pageSize=1
+            ).execute()
+            
+            items = results.get('files', [])
+            if items:
+                return items[0]['id']
+            return None
+        except HttpError as e:
+            logger.error(f"Error checking file existence: {e}")
+            return None
 

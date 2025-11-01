@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from app.config import settings
 from app.logger import initialize_logger
 from app.services.gdrive_service import GoogleDriveService
-from app.services.service_manager import set_gdrive_service
-from app.routers import health, upload
+from app.services.mongodb_service import MongoDBService
+from app.services.service_manager import set_gdrive_service, set_mongodb_service
+from app.routers import health, upload, ocr
 
 # Initialize logger
 logger = initialize_logger()
@@ -25,11 +26,13 @@ app = FastAPI(
 # Include routers
 app.include_router(health.router)
 app.include_router(upload.router)
+app.include_router(ocr.router)
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
+    # Initialize Google Drive service
     try:
         # Build client config from environment variables
         client_config = {
@@ -48,16 +51,33 @@ async def startup_event():
             token_file=settings.GOOGLE_DRIVE_TOKEN_FILE
         )
         set_gdrive_service(initialized_service)
-        
-        logger.info("Application started successfully")
+        logger.info("Google Drive service initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Google Drive service: {e}")
         logger.warning("Application started but Google Drive service is unavailable")
+    
+    # Initialize MongoDB service
+    try:
+        # MongoDBService will use secure credentials from env vars if available,
+        # otherwise falls back to MONGODB_URI for local development
+        mongodb_service = MongoDBService(
+            database_name=settings.MONGODB_DATABASE
+        )
+        set_mongodb_service(mongodb_service)
+        logger.info("MongoDB service initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize MongoDB service: {e}")
+        logger.warning("Application started but MongoDB service is unavailable")
+    
+    logger.info("Application started successfully")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
+    from app.services.service_manager import mongodb_service
+    if mongodb_service:
+        mongodb_service.close()
     logger.info("Application shutting down")
 
 
