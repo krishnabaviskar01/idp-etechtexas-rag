@@ -130,12 +130,16 @@ async def process_ocr(
         file_path = file_info['path']
         mime_type = file_info.get('mimeType')
         
+        # Construct Google Drive public view URL
+        source_url = f"https://drive.google.com/file/d/{file_id}/view"
+        
         # Create document record
         doc_id = mongodb_service.create_doc(
             job_id=job_id,
             dataset_name=request.dataset_name,
             source_drive_file_id=file_id,
-            source_path=file_path
+            source_path=file_path,
+            source_url=source_url
         )
         
         # Determine output path (mirror structure under "Optical Character Recognition")
@@ -263,7 +267,8 @@ async def process_ocr(
                     "total_page_count": chunk['total_page_count'],
                     "page_index": chunk['page_index'],
                     "chunk_index": chunk['chunk_index'],
-                    "text": chunk['text']
+                    "text": chunk['text'],
+                    "source_url": source_url
                 })
             
             # Upload JSON to Drive
