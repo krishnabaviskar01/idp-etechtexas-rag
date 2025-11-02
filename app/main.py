@@ -9,7 +9,7 @@ from app.logger import initialize_logger
 from app.services.gdrive_service import GoogleDriveService
 from app.services.mongodb_service import MongoDBService
 from app.services.service_manager import set_gdrive_service, set_mongodb_service
-from app.routers import health, upload, ocr
+from app.routers import health, upload, ocr, ingestion
 
 # Initialize logger
 logger = initialize_logger()
@@ -27,6 +27,7 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(ocr.router)
+app.include_router(ingestion.router)
 
 
 @app.on_event("startup")
