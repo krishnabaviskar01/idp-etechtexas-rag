@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     MONGO_CLUSTER_URL: Optional[str] = os.getenv("MONGO_CLUSTER_URL")
     MONGO_APP_NAME: Optional[str] = os.getenv("MONGO_APP_NAME")
     
+    # OpenAI Configuration
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    
+    # Pinecone Configuration
+    PINECONE_API_KEY: Optional[str] = os.getenv("PINECONE_API_KEY")
+    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "idp-etechtexas-rag")
+    
     # API
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000

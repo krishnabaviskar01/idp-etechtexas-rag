@@ -15,3 +15,5 @@ python-slugify==8.0.1
 regex==2024.5.15
 python-dotenv==1.0.0
 langchain-text-splitters==1.0.0
+openai==2.6.1
+pinecone==7.3.0
