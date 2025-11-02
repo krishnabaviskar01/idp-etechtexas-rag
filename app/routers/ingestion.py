@@ -1,7 +1,6 @@
 """
 Ingestion pipeline router
 """
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from loguru import logger
 

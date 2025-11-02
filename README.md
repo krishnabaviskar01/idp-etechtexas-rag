@@ -62,14 +62,6 @@ A FastAPI application for uploading files to Google Drive, OCR text extraction, 
      MONGO_APP_NAME=your_app_name  # Optional
      MONGODB_DATABASE=central_acts
      ```
-   
-   **Option 2: Local MongoDB (For Development)**
-   - Install MongoDB locally
-   - Add to your `.env` file:
-     ```env
-     MONGODB_URI=mongodb://localhost:27017
-     MONGODB_DATABASE=central_acts
-     ```
 
 4. **OpenAI Setup:**
    - Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
@@ -103,17 +95,12 @@ A FastAPI application for uploading files to Google Drive, OCR text extraction, 
      GOOGLE_DRIVE_TOKEN_FILE=token.json
      GOOGLE_DRIVE_FOLDER_ID=1ZT_FuaOCd6DmoAcOXbMhH2XmXCrLHovy  # Default folder ID
      
-     # MongoDB Configuration (choose one option)
-     # Option 1: MongoDB Atlas
+    # MongoDB Configuration
      MONGO_USERNAME=your_username
      MONGO_PASSWORD=your_password
      MONGO_CLUSTER_URL=your-cluster.mongodb.net
      MONGO_APP_NAME=your_app_name  # Optional
      MONGODB_DATABASE=central_acts
-     
-     # Option 2: Local MongoDB
-     # MONGODB_URI=mongodb://localhost:27017
-     # MONGODB_DATABASE=central_acts
      
      # OpenAI Configuration
      OPENAI_API_KEY=sk-your-api-key-here
@@ -551,13 +538,15 @@ All configuration is managed through environment variables. The application uses
 - `GOOGLE_DRIVE_CLIENT_SECRET`: Google Drive OAuth client secret
 - `OPENAI_API_KEY`: OpenAI API key for embeddings and metadata extraction
 - `PINECONE_API_KEY`: Pinecone API key for vector storage
+- `MONGO_USERNAME`: MongoDB Atlas username
+- `MONGO_PASSWORD`: MongoDB Atlas password
+- `MONGO_CLUSTER_URL`: MongoDB Atlas cluster URL (e.g., `cluster0.mongodb.net`)
 
 **Optional Environment Variables:**
 - `GOOGLE_DRIVE_PROJECT_ID`: Google Cloud project ID
 - `GOOGLE_DRIVE_TOKEN_FILE`: Token file path (default: `token.json`)
 - `GOOGLE_DRIVE_FOLDER_ID`: Default Google Drive folder ID
-- `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_CLUSTER_URL`: MongoDB Atlas credentials
-- `MONGODB_URI`: Local MongoDB connection string (alternative to Atlas)
+- `MONGO_APP_NAME`: MongoDB application name (Atlas connection option)
 - `MONGODB_DATABASE`: MongoDB database name (default: `central_acts`)
 - `PINECONE_INDEX_NAME`: Pinecone index name (default: `idp-etechtexas-rag`)
 - `EMBEDDING_DIMENSION`: Pinecone index dimension (default: `1536` for text-embedding-3-small)

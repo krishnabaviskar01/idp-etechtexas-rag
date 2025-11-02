@@ -1,20 +1,16 @@
 """
 MongoDB service for OCR progress tracking
 """
-import os
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+
+from bson import ObjectId
+from loguru import logger
 from pymongo import MongoClient
 from pymongo.database import Database
-from bson import ObjectId
 from urllib.parse import quote_plus
-from dotenv import load_dotenv
-from loguru import logger
 
 from app.config import settings
-
-# Load environment variables from .env file
-load_dotenv()
 
 
 def get_mongo_client(uri: Optional[str] = None) -> MongoClient:
@@ -32,27 +28,33 @@ def get_mongo_client(uri: Optional[str] = None) -> MongoClient:
         Exception: If connection fails
     """
     if uri:
-        # Use provided URI (fallback for local development)
+        # Use provided URI if explicitly supplied
         client = MongoClient(
             uri,
             serverSelectionTimeoutMS=5000
         )
     else:
-        # Construct URI from environment variables
-        username = quote_plus(os.getenv("MONGO_USERNAME", ""))
-        password = quote_plus(os.getenv("MONGO_PASSWORD", ""))
-        cluster_url = os.getenv("MONGO_CLUSTER_URL", "")
-        app_name = os.getenv("MONGO_APP_NAME", "")
-        
+        # Construct URI from application settings
+        username = settings.MONGO_USERNAME or ""
+        password = settings.MONGO_PASSWORD or ""
+        cluster_url = settings.MONGO_CLUSTER_URL or ""
+        app_name = settings.MONGO_APP_NAME or ""
+
         if not all([username, password, cluster_url]):
-            raise ValueError("Missing MongoDB credentials in environment variables. "
-                           "Required: MONGO_USERNAME, MONGO_PASSWORD, MONGO_CLUSTER_URL")
-        
+            raise ValueError(
+                "Missing MongoDB credentials in configuration. Required: "
+                "MONGO_USERNAME, MONGO_PASSWORD, MONGO_CLUSTER_URL"
+            )
+
+        encoded_username = quote_plus(username)
+        encoded_password = quote_plus(password)
+        app_name_param = quote_plus(app_name) if app_name else ""
+
         # Construct MongoDB Atlas connection string
-        if app_name:
-            uri = f"mongodb+srv://{username}:{password}@{cluster_url}/?appName={app_name}"
+        if app_name_param:
+            uri = f"mongodb+srv://{encoded_username}:{encoded_password}@{cluster_url}/?appName={app_name_param}"
         else:
-            uri = f"mongodb+srv://{username}:{password}@{cluster_url}/"
+            uri = f"mongodb+srv://{encoded_username}:{encoded_password}@{cluster_url}/"
         
         # Recommended connection options
         client = MongoClient(
@@ -85,15 +87,8 @@ class MongoDBService:
         """
         self.database_name = database_name or settings.MONGODB_DATABASE
         
-        # Use provided URI or construct from environment variables
-        if uri:
-            self.uri = uri
-        elif settings.MONGODB_URI and not (settings.MONGO_USERNAME and settings.MONGO_PASSWORD):
-            # Fallback to MONGODB_URI if credentials not provided
-            self.uri = settings.MONGODB_URI
-        else:
-            # Will construct URI in get_mongo_client
-            self.uri = None
+        # Use provided URI if supplied; otherwise construct from settings during connection
+        self.uri = uri
         
         self.client: Optional[MongoClient] = None
         self.db: Optional[Database] = None
