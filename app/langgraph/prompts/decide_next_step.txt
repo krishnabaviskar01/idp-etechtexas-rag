@@ -1,0 +1,11 @@
+Determine whether the user request requires summarization or question answering.
+
+Question:
+{question}
+
+Respond with only one word:
+- "summarize" if the user asks to summarize, condense, or explain provided text.
+- "qna" in all other cases.
+
+Answer (exactly "summarize" or "qna"):
+
