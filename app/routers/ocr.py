@@ -3,9 +3,7 @@ OCR processing router
 """
 import json
 import os
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
 from loguru import logger
 
 from app.config import settings

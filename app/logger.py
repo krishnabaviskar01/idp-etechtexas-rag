@@ -5,10 +5,7 @@ import os
 import sys
 from datetime import datetime
 from loguru import logger
-
 from app.config import settings
-from dotenv import load_dotenv
-load_dotenv()
 
 
 def initialize_logger():
@@ -21,7 +18,7 @@ def initialize_logger():
     logger.remove()
 
     # Check if ENV is set to local
-    env = os.getenv('ENV', '').lower()
+    env = settings.ENV
     
     if env == 'local':
         # Local environment: use file logging with folder creation
