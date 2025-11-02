@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from langchain_core.messages.base import BaseMessage
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 def _preview(text: str, length: int = 120) -> str:
@@ -74,7 +75,7 @@ _gemini_summary_llm = ChatGoogleGenerativeAI(
 
 
 def _latest_human_text(messages: List[BaseMessage]) -> str:
-    for message in reversed(messages):
+    for message in reversed[BaseMessage](messages):
         if isinstance(message, HumanMessage):
             return str(message.content)
     return ""
