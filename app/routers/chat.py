@@ -45,29 +45,28 @@ async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse:
 
     context_chunks = result.get("context_chunks", 0)
 
-    if answer := result.get("answer"):
-        response = ChatResponse(type="qna", answer=answer, context_chunks=context_chunks)
-        if error := result.get("error"):
-            response.error = error
-        if citations := result.get("citations"):
-            response.citations = citations
-        logger.info("Chat response generated", response_type="qna", context_chunks=context_chunks)
-        return response
+    answer = result.get("answer")
+    response_type = "qna"
 
-    if summary := result.get("summary"):
-        response = ChatResponse(type="summary", summary=summary, context_chunks=context_chunks)
-        if error := result.get("error"):
-            response.error = error
-        if citations := result.get("citations"):
-            response.citations = citations
-        logger.info("Chat response generated", response_type="summary", context_chunks=context_chunks)
+    if not answer and (summary := result.get("summary")):
+        answer = summary
+        response_type = "summary"
+
+    if answer:
+        response = ChatResponse(
+            type=response_type,
+            answer=answer,
+            context_chunks=context_chunks,
+            citations=result.get("citations"),
+        )
+        logger.info("Chat response generated", response_type=response_type, context_chunks=context_chunks)
         return response
 
     if error := result.get("error"):
         logger.warning("Chat response returned error", error=error)
-        return ChatResponse(type="error", error=error)
+        return ChatResponse(type="error", answer=error)
 
     logger.warning("Chat response type unknown", state_keys=list(result.keys()))
-    return ChatResponse(type="unknown", state=result)
+    return ChatResponse(type="unknown", answer="Unable to generate a response.")
 
 

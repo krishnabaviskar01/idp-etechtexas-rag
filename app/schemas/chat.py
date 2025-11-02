@@ -18,10 +18,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     type: Literal["qna", "summary", "error", "unknown"]
     answer: Optional[str] = None
-    summary: Optional[str] = None
-    error: Optional[str] = None
     context_chunks: Optional[int] = None
-    state: Optional[Dict[str, Any]] = None
     citations: Optional[List[Dict[str, Any]]] = None
 
 
