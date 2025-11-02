@@ -4,6 +4,9 @@ Application configuration
 import os
 from pydantic_settings import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -40,10 +43,23 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
     
     # Pinecone Configuration
     PINECONE_API_KEY: Optional[str] = os.getenv("PINECONE_API_KEY")
     PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "idp-etechtexas-rag")
+    PINECONE_ENVIRONMENT: Optional[str] = os.getenv("PINECONE_ENV")
+
+    # LLM Defaults
+    LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT", "60"))
+    LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", "2"))
+    RAG_TOP_K: int = int(os.getenv("RAG_TOP_K", "8"))
+    RAG_MAX_CONTEXT_CHARS: int = int(os.getenv("RAG_MAX_CONTEXT_CHARS", "18000"))
+    RAG_MAX_SNIPPET_CHARS: int = int(os.getenv("RAG_MAX_SNIPPET_CHARS", "1200"))
+    SUMMARY_FULL_DOCUMENT_MODE: bool = os.getenv("SUMMARY_FULL_DOCUMENT_MODE", "true").lower() in {"1", "true", "yes"}
+    SUMMARY_MAX_CONTEXT_CHARS: int = int(os.getenv("SUMMARY_MAX_CONTEXT_CHARS", "100000"))
+    SUMMARY_DOC_MAX_CHUNKS: int = int(os.getenv("SUMMARY_DOC_MAX_CHUNKS", "2000"))
+    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION", "1536"))
     
     # API
     API_HOST: str = "0.0.0.0"
