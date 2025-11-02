@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     GOOGLE_DRIVE_FOLDER_ID: Optional[str] = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
     
     # MongoDB Configuration
-    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "central_acts")
+    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE")
     # MongoDB Atlas credentials (for secure connection)
     MONGO_USERNAME: Optional[str] = os.getenv("MONGO_USERNAME")
     MONGO_PASSWORD: Optional[str] = os.getenv("MONGO_PASSWORD")
@@ -46,19 +46,19 @@ class Settings(BaseSettings):
     
     # Pinecone Configuration
     PINECONE_API_KEY: Optional[str] = os.getenv("PINECONE_API_KEY")
-    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "idp-etechtexas-rag")
+    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME")
     PINECONE_ENVIRONMENT: Optional[str] = os.getenv("PINECONE_ENV")
 
     # LLM Defaults
-    LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT", "60"))
-    LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", "2"))
-    RAG_TOP_K: int = int(os.getenv("RAG_TOP_K", "8"))
-    RAG_MAX_CONTEXT_CHARS: int = int(os.getenv("RAG_MAX_CONTEXT_CHARS", "18000"))
-    RAG_MAX_SNIPPET_CHARS: int = int(os.getenv("RAG_MAX_SNIPPET_CHARS", "1200"))
-    SUMMARY_FULL_DOCUMENT_MODE: bool = os.getenv("SUMMARY_FULL_DOCUMENT_MODE", "true").lower() in {"1", "true", "yes"}
-    SUMMARY_MAX_CONTEXT_CHARS: int = int(os.getenv("SUMMARY_MAX_CONTEXT_CHARS", "100000"))
-    SUMMARY_DOC_MAX_CHUNKS: int = int(os.getenv("SUMMARY_DOC_MAX_CHUNKS", "2000"))
-    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION", "1536"))
+    LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT"))
+    LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES"))
+    RAG_TOP_K: int = int(os.getenv("RAG_TOP_K"))
+    RAG_MAX_CONTEXT_CHARS: int = int(os.getenv("RAG_MAX_CONTEXT_CHARS"))
+    RAG_MAX_SNIPPET_CHARS: int = int(os.getenv("RAG_MAX_SNIPPET_CHARS"))
+    SUMMARY_FULL_DOCUMENT_MODE: bool = os.getenv("SUMMARY_FULL_DOCUMENT_MODE")
+    SUMMARY_MAX_CONTEXT_CHARS: int = int(os.getenv("SUMMARY_MAX_CONTEXT_CHARS"))
+    SUMMARY_DOC_MAX_CHUNKS: int = int(os.getenv("SUMMARY_DOC_MAX_CHUNKS"))
+    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION"))
     
     # API
     API_HOST: str = "0.0.0.0"
