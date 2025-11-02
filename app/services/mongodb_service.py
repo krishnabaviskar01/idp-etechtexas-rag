@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 from bson import ObjectId
-from dotenv import load_dotenv
 from loguru import logger
 from pymongo import MongoClient
 from pymongo.database import Database

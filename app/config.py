@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "IDP EtechTexas RAG"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
-    ENV: str = ""  # Environment variable for logger configuration
+    ENV: str = os.getenv("ENV")  # Environment variable for logger configuration
     
     
     # Google Drive API Credentials (from .env)
