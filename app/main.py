@@ -62,8 +62,6 @@ async def startup_event():
     
     # Initialize MongoDB service
     try:
-        # MongoDBService will use secure credentials from env vars if available,
-        # otherwise falls back to MONGODB_URI for local development
         mongodb_service = MongoDBService(
             database_name=settings.MONGODB_DATABASE
         )
