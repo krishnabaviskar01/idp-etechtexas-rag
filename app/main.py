@@ -4,6 +4,7 @@ FastAPI application main file
 import uvicorn
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logger import initialize_logger
@@ -23,6 +24,13 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="FastAPI application for uploading files to Google Drive",
     debug=settings.DEBUG
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # change to specific origins when done testing
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers

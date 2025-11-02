@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from langchain_core.messages.base import BaseMessage
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 def _preview(text: str, length: int = 120) -> str:
