@@ -21,6 +21,9 @@ A FastAPI application for uploading files to Google Drive, OCR text extraction, 
 - ✅ **Source URL Tracking** - Google Drive public URLs stored in MongoDB, OCR JSON, and Pinecone metadata
 - ✅ **Page Index Tracking** - Page index included in Pinecone metadata and vector IDs for better idempotence
 - ✅ **Idempotent Operations** - Re-running pipelines updates existing records instead of creating duplicates
+- ✅ **LangGraph Chat Workflow** - Router node dispatches to QnA or summarization agents with shared graph state
+- ✅ **Full-Document Summaries** - Summarization agent fetches entire documents from Pinecone before calling Gemini
+- ✅ **RAG Telemetry** - Structured Loguru logging surfaces prompts, retrieved chunks, citations, and agent outputs
 - ✅ Pydantic schemas for request/response validation
 - ✅ Loguru logging with environment-based configuration
 - ✅ Configuration management with environment variables
@@ -82,6 +85,7 @@ A FastAPI application for uploading files to Google Drive, OCR text extraction, 
      ```env
      PINECONE_API_KEY=your-pinecone-api-key
      PINECONE_INDEX_NAME=idp-etechtexas-rag  # Optional, defaults to this
+     EMBEDDING_DIMENSION=1536                # Matches text-embedding-3-small
      ```
    - The index will be automatically created if it doesn't exist (1536 dimensions for text-embedding-3-small)
 
@@ -117,6 +121,12 @@ A FastAPI application for uploading files to Google Drive, OCR text extraction, 
      # Pinecone Configuration
      PINECONE_API_KEY=your-pinecone-api-key
      PINECONE_INDEX_NAME=idp-etechtexas-rag  # Optional
+     EMBEDDING_DIMENSION=1536
+
+     # LangGraph / Summarization Configuration
+     SUMMARY_FULL_DOCUMENT_MODE=true
+     SUMMARY_MAX_CONTEXT_CHARS=100000
+     SUMMARY_DOC_MAX_CHUNKS=2000
      ```
 
 5. **Run the application:**
@@ -310,6 +320,44 @@ curl -X POST "http://localhost:8000/ingestion/pipeline" \
 }
 ```
 
+#### `POST /chat`
+Execute the LangGraph chat workflow for Question Answering (OpenAI GPT-4o-mini) and Summarization (Gemini 1.5 Flash) with Pinecone-backed retrieval.
+
+**Request Body (JSON):**
+```json
+{
+  "message": "Summarize the retention policy judgment.",
+  "dataset_name": "Bombay Highcourt Judgements"
+}
+```
+
+- `message` *(required)* – User query or text to summarize.
+- `dataset_name` *(optional)* – Scopes retrieval to a specific namespace and metadata filter.
+
+**Response (QnA example):**
+```json
+{
+  "type": "qna",
+  "answer": "Records must be retained for seven years unless ...",
+  "context_chunks": 5,
+  "citations": [
+    {"label": "CIT:1", "source_file": "policy.pdf", "page_index": 2},
+    {"label": "CIT:2", "source_file": "policy.pdf", "page_index": 3}
+  ]
+}
+```
+
+**Response (Summary example):**
+```json
+{
+  "type": "summary",
+  "summary": "The judgment outlines the responsibilities ...",
+  "context_chunks": 82
+}
+```
+
+Error responses return `{ "type": "error", "error": "..." }`, and unknown states echo raw graph output for debugging. The endpoint logs routing decisions, Pinecone snapshots, prompts, and generated text for full observability.
+
 **Pinecone Vector Structure:**
 Each vector stored in Pinecone includes:
 - `id`: Unique identifier (`{document_id}_p{page_index}_c{chunk_index}`)
@@ -319,11 +367,20 @@ Each vector stored in Pinecone includes:
 - `metadata`: Dictionary containing:
   - `dataset_name`: Dataset name
   - `source_file`: Original file name
+  - `document_id`: Unique document identifier (preferred key for full-document summarization)
   - `text`: Chunk text content
   - `chunk_index`: Chunk index (0-based)
   - `page_index`: Page index (0-based)
   - `source_url`: Google Drive public view URL
   - All extracted metadata fields (document_id, title, court_name, case_number, etc.)
+
+### LangGraph Chat Workflow
+
+- **Router (`decide_next_step`)** – Uses Gemini 1.5 Flash to classify each request as `qna` or `summarize`.
+- **Question Answering** – Retrieves top-k semantic matches (default 8) via Pinecone, formats context with labeled `[CIT:n]` snippets, and responds using OpenAI GPT-4o-mini. Citations and chunk counts are returned in the API response.
+- **Full-Document Summarization** – Performs a top-1 semantic search, identifies the underlying document, fetches all chunks for that document using metadata (`document_id` or `source_file`), orders them by `page_index`/`chunk_index`, and concatenates them before prompting Gemini 1.5 Flash.
+- **Observability** – Loguru captures routing decisions, Pinecone previews, prompts (truncated for safety), and model outputs to simplify troubleshooting.
+- **Configuration** – Controlled via environment variables (`SUMMARY_FULL_DOCUMENT_MODE`, `SUMMARY_MAX_CONTEXT_CHARS`, `SUMMARY_DOC_MAX_CHUNKS`, `RAG_TOP_K`, etc.).
 
 **Metadata Extraction:**
 - Uses GPT-4o-mini with JSON response format
@@ -503,6 +560,9 @@ All configuration is managed through environment variables. The application uses
 - `MONGODB_URI`: Local MongoDB connection string (alternative to Atlas)
 - `MONGODB_DATABASE`: MongoDB database name (default: `central_acts`)
 - `PINECONE_INDEX_NAME`: Pinecone index name (default: `idp-etechtexas-rag`)
+- `EMBEDDING_DIMENSION`: Pinecone index dimension (default: `1536` for text-embedding-3-small)
+- `RAG_TOP_K`, `RAG_MAX_CONTEXT_CHARS`, `RAG_MAX_SNIPPET_CHARS`: Tunables for QnA retrieval fan-out and prompt assembly
+- `SUMMARY_FULL_DOCUMENT_MODE`, `SUMMARY_MAX_CONTEXT_CHARS`, `SUMMARY_DOC_MAX_CHUNKS`: Controls for full-document summarization flow
 - `ENV`: Environment setting for logging (`local` for file logging)
 
 ### Architecture
@@ -512,6 +572,7 @@ The application follows FastAPI best practices:
 - **Router-based structure**: Endpoints organized by feature in separate router files
 - **Pydantic schemas**: Request/response models defined in `schemas/` folder for validation and documentation
 - **Service layer**: Business logic separated into service classes
+- **LangGraph agents**: Compiled state graph powers `/chat` with router, QnA, and summarization branches
 - **Dependency injection**: Services managed centrally and injected into routes
 - **Type safety**: Full type hints and Pydantic validation throughout
 - **Error handling**: Comprehensive error handling with appropriate HTTP status codes
@@ -555,6 +616,10 @@ Key dependencies:
 - `pymupdf`: PDF text extraction
 - `python-docx`: DOC/DOCX text extraction
 - `langchain-text-splitters`: Text chunking
+- `langchain`: LLM orchestration primitives
+- `langgraph`: State graph orchestration for chat workflow
+- `langchain-openai`: OpenAI chat/embedding wrappers
+- `langchain-google-genai` & `google-generativeai`: Gemini 1.5 Flash access
 - `langdetect`: Language detection
 - `pymongo`: MongoDB driver
 - `openai`: OpenAI API client for embeddings and GPT
@@ -577,6 +642,7 @@ See `requirements.txt` for complete list.
 - Source URLs (`source_url`) are stored in MongoDB, OCR JSON, and Pinecone metadata for easy access
 - Vector IDs include page_index for proper disambiguation (`{doc_id}_p{page_index}_c{chunk_index}`)
 - Re-running ingestion pipelines updates existing MongoDB records instead of creating duplicates
+- Full-document summarization mode retrieves all chunks for a document, assembles them in order, and truncates if the concatenated text exceeds `SUMMARY_MAX_CONTEXT_CHARS`.
 
 ### Troubleshooting
 
@@ -606,6 +672,7 @@ See `requirements.txt` for complete list.
 - Check that the index name matches (`PINECONE_INDEX_NAME` defaults to `idp-etechtexas-rag`)
 - The index is automatically created if it doesn't exist (1536 dimensions, cosine similarity)
 - Ensure metadata values don't exceed Pinecone's size limits (very long strings are truncated to 1000 chars)
+- For full-document summarization, confirm `document_id` (preferred) or `source_file` metadata is present and that `EMBEDDING_DIMENSION` matches the index dimension so metadata-only queries succeed.
 
 ### License
 
