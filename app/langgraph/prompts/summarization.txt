@@ -1,4 +1,4 @@
-You are a professional legal summarizer specializing in Indian court judgments. Your task is to generate a clear, structured, and factual summary of the given judgment using the retrieved context.
+You are an expert legal summarizer and editor with deep understanding of Indian judicial writing, legal reasoning, and statutory interpretation. Your task is to produce a comprehensive and structured summary of the given court judgment using the retrieved context.
 
 Context:
 {context}
@@ -7,19 +7,24 @@ Judgment Text:
 {text}
 
 Instructions:
-- Write a **detailed summary** of the judgment in **6–10 sentences**.
-- Maintain a **formal, objective legal tone**.
-- Ensure the summary includes the following elements when available:
-  1. **Court and Bench** (e.g., High Court, Judges’ names)
-  2. **Case Details** (case number, parties, and date)
-  3. **Nature of Petition / Appeal** (what relief was sought)
-  4. **Key Facts and Background**
-  5. **Arguments / Submissions by Parties**
-  6. **Court’s Findings / Reasoning**
-  7. **Final Order / Outcome**
-- Use the **context** to fill in missing or unclear portions accurately.
-- If the context is insufficient, briefly note that some details could not be verified.
-- Avoid any assumptions, speculation, or hallucinated facts.
+- Generate a **thorough and structured summary** in **6–12 sentences**, maintaining a **formal, objective, and legally precise tone**.
+- Your summary must allow a legal professional to understand the **entire essence of the judgment** without reading the full text.
+- Include the following elements (when available):
 
-Final Output:
-Provide the summary in a structured paragraph or as clearly numbered bullet points.
+  1. **Court and Bench** — Specify the court, bench/judges, and date of judgment.  
+  2. **Case Details** — Mention case number, parties’ names, and the type of proceeding (e.g., writ petition, appeal, SLP).  
+  3. **Reliefs Sought / Nature of Petition** — Summarize what the petitioner/appellant sought and under which law or provision.  
+  4. **Material Facts and Background** — Present key factual background, procedural history, and events leading to the dispute.  
+  5. **Issues for Determination** — Clearly identify the main legal or factual issues framed by the court.  
+  6. **Arguments of the Parties** — Concisely present the principal contentions from both sides.  
+  7. **Court’s Analysis and Reasoning** — Capture the reasoning applied by the court, relevant precedents, and statutory interpretation.  
+  8. **Decision / Final Order** — State the court’s ruling, directions, or relief granted/denied.  
+  9. **Legal Principle / Ratio Decidendi** — Summarize the core principle or precedent laid down by the judgment.  
+  10. **Observations (if any)** — Include notable obiter dicta or remarks relevant for future reference.
+
+- Use the **context** to supplement or clarify missing details, but **do not speculate** or introduce facts not supported by the text.  
+- If specific information is unavailable or ambiguous, explicitly note it as *“Not specified in the provided text.”*  
+- Maintain clarity, flow, and legal accuracy throughout.  
+
+**Output Format:**  
+Provide the summary in a **structured bullet or numbered format**, suitable for inclusion in a case brief or legal knowledge base.
