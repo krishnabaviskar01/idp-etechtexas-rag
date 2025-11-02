@@ -8,16 +8,13 @@ from loguru import logger
 
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.services.service_manager import get_gdrive_service, get_mongodb_service
 from app.services.gdrive_service import GoogleDriveService
 from app.services.ocr_service import OCRService
 from app.services.mongodb_service import MongoDBService
 from app.config import settings
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class IngestionService:
     """Service for end-to-end ingestion pipeline"""
@@ -25,19 +22,25 @@ class IngestionService:
     def __init__(self):
         """Initialize ingestion service with OpenAI and Pinecone clients"""
         # Initialize OpenAI client
-        openai_api_key = os.getenv("OPENAI_API_KEY")
+        openai_api_key = settings.OPENAI_API_KEY
         if not openai_api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+            raise ValueError("OPENAI_API_KEY configuration is required")
         self.openai_client = OpenAI(api_key=openai_api_key)
-        
+
         # Initialize Pinecone client
-        pinecone_api_key = os.getenv("PINECONE_API_KEY")
+        pinecone_api_key = settings.PINECONE_API_KEY
         if not pinecone_api_key:
-            raise ValueError("PINECONE_API_KEY environment variable is required")
+            raise ValueError("PINECONE_API_KEY configuration is required")
         self.pinecone_client = Pinecone(api_key=pinecone_api_key)
-        
-        pinecone_index_name = os.getenv("PINECONE_INDEX_NAME", "idp-etechtexas-rag")
+
+        pinecone_index_name = settings.PINECONE_INDEX_NAME
+        if not pinecone_index_name:
+            raise ValueError("PINECONE_INDEX_NAME configuration is required")
         self.pinecone_index_name = pinecone_index_name
+
+        embedding_dimension = settings.EMBEDDING_DIMENSION
+        if not embedding_dimension:
+            raise ValueError("EMBEDDING_DIMENSION configuration is required")
         
         # Get or create Pinecone index
         try:
@@ -46,7 +49,7 @@ class IngestionService:
                 logger.info(f"Creating Pinecone index: {pinecone_index_name}")
                 self.pinecone_client.create_index(
                     name=pinecone_index_name,
-                    dimension=1536,  # text-embedding-3-small dimension
+                    dimension=embedding_dimension,
                     metric="cosine",
                     spec=ServerlessSpec(
                         cloud="aws",
