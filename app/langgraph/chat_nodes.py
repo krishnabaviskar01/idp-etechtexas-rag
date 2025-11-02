@@ -75,7 +75,7 @@ _gemini_summary_llm = ChatGoogleGenerativeAI(
 
 
 def _latest_human_text(messages: List[BaseMessage]) -> str:
-    for message in reversed[BaseMessage](messages):
+    for message in reversed(messages):
         if isinstance(message, HumanMessage):
             return str(message.content)
     return ""
