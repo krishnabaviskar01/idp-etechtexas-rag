@@ -6,7 +6,6 @@ import os
 import unicodedata
 import re
 from typing import List, Dict, Any, Optional, Tuple
-from pathlib import Path
 import fitz  # PyMuPDF
 from docx import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
